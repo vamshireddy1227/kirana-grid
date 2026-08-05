@@ -1,0 +1,24 @@
+{
+  "name": "kirana-grid-core",
+  "version": "1.0.0",
+  "description": "Real-time B2B hyperlocal logistics control platform — order assignment, delivery batching, SLA monitoring, and a live Control Tower dashboard, built on zero external dependencies.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "logistics",
+    "real-time",
+    "sse",
+    "hyperlocal",
+    "delivery",
+    "dispatch",
+    "control-tower"
+  ],
+  "license": "MIT",
+  "dependencies": {}
+}

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kirana Grid — Control Tower</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root{
+  --bg:#0A0E13; --surface:#111826; --surface-2:#182233; --border:#242F41;
+  --text:#EAF1F7; --text-muted:#7C8CA0;
+  --cyan:#29F0D6; --cyan-dim:rgba(41,240,214,0.15);
+  --amber:#FFB74D; --amber-dim:rgba(255,183,77,0.15);
+  --red:#FF5C6C; --red-dim:rgba(255,92,108,0.15);
+  --violet:#8B7CFF; --violet-dim:rgba(139,124,255,0.15);
+  --green:#7FD99A;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(41,240,214,0.06), transparent),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(139,124,255,0.05), transparent),
+    var(--bg);
+  color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;padding:20px;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.app{max-width:1480px;margin:0 auto;}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;margin-bottom:16px;flex-wrap:wrap;gap:12px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(160deg,var(--cyan),var(--violet));
+  display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;color:#06141C;font-size:16px;
+  box-shadow:0 0 18px rgba(41,240,214,0.35);}
+.brand-text .name{font-family:'Space Grotesk';font-weight:600;font-size:15px;letter-spacing:0.3px;}
+.brand-text .sub{font-size:11px;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;}
+
+.city-tabs{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:10px;}
+.city-tab{padding:7px 14px;border-radius:8px;font-size:13px;color:var(--text-muted);cursor:pointer;border:none;
+  background:transparent;font-family:'Inter';font-weight:500;transition:all .15s;}
+.city-tab.active{background:var(--cyan-dim);color:var(--cyan);text-shadow:0 0 12px rgba(41,240,214,0.5);}
+.city-tab:hover:not(.active){color:var(--text);}
+
+.demo-controls{display:flex;gap:8px;align-items:center;}
+.demo-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text-muted);cursor:pointer;font-family:'Inter';transition:all .15s;}
+.demo-btn.start:hover{border-color:var(--cyan);color:var(--cyan);}
+.demo-btn.stop:hover{border-color:var(--red);color:var(--red);}
+.demo-btn.active{background:var(--cyan-dim);color:var(--cyan);border-color:var(--cyan);}
+.demo-btn:disabled{opacity:0.4;cursor:default;}
+
+.api-row{display:flex;align-items:center;gap:8px;}
+.api-row input{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;
+  padding:6px 10px;font-size:11px;font-family:'JetBrains Mono';width:170px;}
+.api-row input:focus{outline:1px solid var(--cyan);}
+
+.status-cluster{display:flex;align-items:center;gap:14px;}
+.live-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--text-muted);}
+.live-dot.on{background:var(--cyan);box-shadow:0 0 10px 2px rgba(41,240,214,.6);animation:pulse 1.8s infinite;}
+.live-dot.off{background:var(--red);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(41,240,214,.5);}70%{box-shadow:0 0 0 8px rgba(41,240,214,0);}100%{box-shadow:0 0 0 0 rgba(41,240,214,0);}}
+.status-text{font-size:12px;color:var(--text-muted);}
+.clock{font-size:13px;color:var(--text);}
+
+/* ── Metrics panel ─────────────────────────── */
+.metrics-row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:16px;}
+@media (max-width:1200px){.metrics-row{grid-template-columns:repeat(4,1fr);}}
+@media (max-width:700px){.metrics-row{grid-template-columns:repeat(2,1fr);}}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;}
+.metric-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--cyan),transparent);opacity:0.6;}
+.metric-label{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.metric-value{font-family:'Space Grotesk';font-size:24px;font-weight:700;text-shadow:0 0 20px rgba(41,240,214,0.15);}
+.metric-sub{font-size:10.5px;color:var(--text-muted);margin-top:4px;}
+
+.grid{display:grid;grid-template-columns:1fr 360px;gap:16px;}
+@media (max-width:1000px){.grid{grid-template-columns:1fr;}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.panel-title{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;font-weight:500;}
+
+.legend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);}
+.legend-dot{width:8px;height:8px;border-radius:50%;}
+
+.explain-box{background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--cyan);
+  border-radius:8px;padding:12px 14px;margin-top:14px;font-size:12.5px;color:var(--text);line-height:1.5;
+  min-height:20px;transition:border-color .3s;}
+.explain-box.flash{border-left-color:var(--green);}
+
+.ticker{margin-top:14px;max-height:220px;overflow-y:auto;}
+.ticker::-webkit-scrollbar{width:5px;}
+.ticker::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.tick-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;align-items:baseline;}
+.tick-row:last-child{border-bottom:none;}
+.tick-time{color:var(--text-muted);font-family:'JetBrains Mono';font-size:11px;min-width:58px;}
+.tick-badge{font-size:10px;padding:2px 7px;border-radius:5px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;}
+.b-created{background:var(--violet-dim);color:var(--violet);}
+.b-assigned{background:var(--cyan-dim);color:var(--cyan);}
+.b-picked{background:var(--amber-dim);color:var(--amber);}
+.b-transit{background:var(--amber-dim);color:var(--amber);}
+.b-delivered{background:rgba(120,200,140,0.15);color:var(--green);}
+.b-sla{background:var(--red-dim);color:var(--red);}
+.b-queued{background:var(--amber-dim);color:var(--amber);}
+.tick-text{color:var(--text-muted);}
+
+.side-panel{margin-bottom:16px;}
+.gauge-wrap{display:flex;align-items:center;gap:16px;}
+.gauge-val{font-family:'Space Grotesk';font-size:26px;font-weight:700;}
+.gauge-sub{font-size:11px;color:var(--text-muted);}
+.empty-note{font-size:12px;color:var(--text-muted);padding:8px 0;}
+
+.spark-wrap{position:relative;height:56px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">K</div>
+      <div class="brand-text"><div class="name">Kirana Grid</div><div class="sub">Control Tower</div></div>
+    </div>
+    <div class="city-tabs" id="cityTabs"></div>
+    <div class="demo-controls">
+      <button class="demo-btn start" id="demoStartBtn">▶ Start Demo</button>
+      <button class="demo-btn stop" id="demoStopBtn">■ Stop Demo</button>
+    </div>
+    <div class="api-row">
+      <span class="status-text">API</span>
+      <input id="apiBase" value="" class="mono" placeholder="http://localhost:4000" />
+    </div>
+    <div class="status-cluster">
+      <div class="status-text"><span class="live-dot" id="liveDot"></span> <span id="connStatus">connecting…</span></div>
+      <div class="clock mono" id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="metrics-row" id="metricsRow">
+    <!-- populated by JS: Total Orders, Active Deliveries, Available Drivers,
+         Avg Delivery Time, SLA Success Rate, Revenue, Orders/Minute -->
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <div class="panel-title" id="mapTitle">Zone activity &amp; demand heatmap</div>
+        <svg id="mapSvg" viewBox="0 0 620 440" style="width:100%;height:auto;display:block;"></svg>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot" style="background:var(--cyan)"></span>Driver idle</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>Assigned / delivering</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--violet)"></span>Business</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--red)"></span>SLA risk / breach</div>
+        </div>
+        <div class="panel-title" style="margin-top:16px;">Last assignment decision</div>
+        <div class="explain-box" id="explainBox">Waiting for the assignment engine to place a driver…</div>
+
+        <div class="panel-title" style="margin-top:16px;">Live order feed</div>
+        <div class="ticker" id="ticker"><div class="empty-note">Waiting for events…</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel side-panel">
+        <div class="panel-title">Orders / minute</div>
+        <div class="spark-wrap"><svg id="sparkOrders" viewBox="0 0 320 56" style="width:100%;height:100%;"></svg></div>
+      </div>
+      <div class="panel side-panel">
+        <div class="panel-title">Revenue trend</div>
+        <div class="spark-wrap"><svg id="sparkRevenue" viewBox="0 0 320 56" style="width:100%;height:100%;"></svg></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">SLA compliance</div>
+        <div class="gauge-wrap">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="var(--surface-2)" stroke-width="7"/>
+            <circle id="gaugeArc" cx="36" cy="36" r="30" fill="none" stroke="var(--cyan)" stroke-width="7"
+              stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="0" transform="rotate(-90 36 36)"/>
+          </svg>
+          <div><div class="gauge-val mono" id="slaValue">100%</div><div class="gauge-sub">from backend metrics</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   STATE MANAGEMENT APPROACH
+   ------------------------------------------------------------
+   No framework — a single `state` object plus persistent SVG/DOM
+   element maps (driverEls, businessEls, zoneEls, orderLineEls).
+   SSE events mutate `state` and patch only the elements that
+   changed (setAttribute on existing nodes), never re-render the
+   whole SVG — that's the "avoid full re-renders" requirement.
+   Driver motion is interpolated client-side between the ~400ms
+   driver_moved ticks via a single shared requestAnimationFrame
+   loop, so motion reads as smooth without spamming the network.
+   Metrics/heatmap are polled from their REST endpoints (the
+   backend computes them on read), not derived from SSE — SSE
+   only triggers an early refetch so the panel feels instant.
+   No number on this page is invented client-side.
+   ============================================================ */
+
+const CITY_TABS = [
+  { id: "city_hyd", label: "Hyderabad" },
+  { id: "city_vizag", label: "Visakhapatnam" },
+];
+
+let apiBase = document.getElementById("apiBase").value.trim() || window.location.origin;
+document.getElementById("apiBase").value = apiBase;
+let currentCity = "city_hyd";
+let es = null;
+
+let zones = [], businesses = [];
+const driverEls = new Map();   // driverId -> {el, from:{lat,lng}, to:{lat,lng}, t0}
+const zoneEls = new Map();     // zoneId -> {circle, label}
+const businessEls = new Map(); // businessId -> rect
+const orderLines = new Map();  // orderId -> {line, driverId, businessId, status}
+
+let bounds = null;
+let ordersHistory = [];  // [{t, ordersPerMinute}]
+let revenueHistory = []; // [{t, revenue}]
+
+function svgEl(tag, attrs){
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function project(lat, lng){
+  if(!bounds) return {x:310,y:220};
+  const px = 40 + ((lng - bounds.minLng) / (bounds.maxLng - bounds.minLng || 1)) * 540;
+  const py = 40 + (1 - (lat - bounds.minLat) / (bounds.maxLat - bounds.minLat || 1)) * 360;
+  return {x:px, y:py};
+}
+function computeBounds(){
+  const pts = [...zones.map(z=>({lat:z.lat,lng:z.lng})), ...businesses.map(b=>({lat:b.lat,lng:b.lng}))];
+  if(!pts.length){ bounds = {minLat:0,maxLat:1,minLng:0,maxLng:1}; return; }
+  bounds = {
+    minLat: Math.min(...pts.map(p=>p.lat)) - 0.01, maxLat: Math.max(...pts.map(p=>p.lat)) + 0.01,
+    minLng: Math.min(...pts.map(p=>p.lng)) - 0.01, maxLng: Math.max(...pts.map(p=>p.lng)) + 0.01,
+  };
+}
+
+// low -> high: cyan -> amber -> red, mirrors a conventional heat scale
+function heatColor(intensity){
+  const t = Math.max(0, Math.min(1, intensity));
+  if(t < 0.5){
+    const k = t/0.5;
+    return lerpColor([41,240,214], [255,183,77], k);
+  }
+  const k = (t-0.5)/0.5;
+  return lerpColor([255,183,77], [255,92,108], k);
+}
+function lerpColor(a,b,k){
+  const c = a.map((v,i)=>Math.round(v + (b[i]-v)*k));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function buildTabs(){
+  const wrap = document.getElementById("cityTabs");
+  wrap.innerHTML = "";
+  CITY_TABS.forEach(c=>{
+    const b = document.createElement("button");
+    b.className = "city-tab"; b.dataset.id = c.id; b.textContent = c.label;
+    b.onclick = ()=>switchCity(c.id);
+    wrap.appendChild(b);
+  });
+}
+
+const METRIC_DEFS = [
+  {key:"totalOrders", label:"Total orders", fmt:v=>v},
+  {key:"activeDeliveries", label:"Active deliveries", fmt:v=>v},
+  {key:"availableDrivers", label:"Available drivers", fmt:v=>v, sub: (m)=>`of ${m.totalDrivers} total`},
+  {key:"avgDeliveryMinutes", label:"Avg delivery time", fmt:v=>v===null?"—":v+" min"},
+  {key:"slaSuccessRate", label:"SLA success rate", fmt:v=>v+"%"},
+  {key:"revenue", label:"Revenue", fmt:v=>"₹"+Math.round(v).toLocaleString("en-IN")},
+  {key:"ordersPerMinute", label:"Orders / minute", fmt:v=>v},
+];
+let lastMetricValues = {};
+
+function buildMetricsCards(){
+  const row = document.getElementById("metricsRow");
+  row.innerHTML = "";
+  METRIC_DEFS.forEach(def=>{
+    const card = document.createElement("div");
+    card.className = "metric-card";
+    card.innerHTML = `<div class="metric-label">${def.label}</div><div class="metric-value mono" id="m_${def.key}">—</div><div class="metric-sub" id="ms_${def.key}"></div>`;
+    row.appendChild(card);
+  });
+}
+
+// Animated count-up: eases the displayed number from its old value to the
+// new one over 500ms rather than snapping — real data, animated display.
+function animateNumber(el, from, to, decimals, suffixFn){
+  const start = performance.now();
+  const dur = 500;
+  function frame(now){
+    const p = Math.min(1, (now-start)/dur);
+    const eased = 1 - Math.pow(1-p, 3);
+    const val = from + (to-from)*eased;
+    el.textContent = suffixFn(decimals ? +val.toFixed(decimals) : Math.round(val));
+    if(p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+async function fetchMetrics(cityId){
+  try{
+    const res = await fetch(`${apiBase}/metrics/${cityId}`);
+    if(!res.ok) return;
+    const m = await res.json();
+    METRIC_DEFS.forEach(def=>{
+      const el = document.getElementById(`m_${def.key}`);
+      if(!el) return;
+      const raw = m[def.key];
+      const prev = lastMetricValues[def.key];
+      if(typeof raw === "number" && typeof prev === "number" && raw !== prev){
+        animateNumber(el, prev, raw, def.key==="revenue"?0:1, def.fmt);
+      } else {
+        el.textContent = def.fmt(raw);
+      }
+      lastMetricValues[def.key] = raw;
+      const subEl = document.getElementById(`ms_${def.key}`);
+      if(subEl && def.sub) subEl.textContent = def.sub(m);
+    });
+    const sla = m.slaSuccessRate;
+    document.getElementById("slaValue").textContent = sla + "%";
+    const circumference = 188.5;
+    const arc = document.getElementById("gaugeArc");
+    arc.setAttribute("stroke-dashoffset", (circumference * (1 - sla/100)).toFixed(1));
+    arc.setAttribute("stroke", sla >= 90 ? "var(--cyan)" : sla >= 75 ? "var(--amber)" : "var(--red)");
+
+    const now = Date.now();
+    ordersHistory.push({t:now, v:m.ordersPerMinute}); if(ordersHistory.length>40) ordersHistory.shift();
+    revenueHistory.push({t:now, v:m.revenue}); if(revenueHistory.length>40) revenueHistory.shift();
+    drawSpark("sparkOrders", ordersHistory, "var(--cyan)");
+    drawSpark("sparkRevenue", revenueHistory, "var(--violet)");
+  }catch(e){ /* backend unreachable — leave last known values on screen */ }
+}
+
+function drawSpark(id, history, color){
+  const svg = document.getElementById(id);
+  svg.innerHTML = "";
+  if(history.length < 2) return;
+  const vals = history.map(h=>h.v);
+  const max = Math.max(...vals, 1), min = Math.min(...vals, 0);
+  const w = 320, h = 56, step = w/(history.length-1);
+  let path = "";
+  history.forEach((pt,i)=>{
+    const x = i*step;
+    const y = h - 6 - ((pt.v-min)/((max-min)||1))*(h-12);
+    path += (i===0?"M":"L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+  });
+  svg.appendChild(svgEl("path",{d:path.trim(), fill:"none", stroke:color, "stroke-width":2}));
+  const last = history[history.length-1];
+  const lx = (history.length-1)*step, ly = h-6-((last.v-min)/((max-min)||1))*(h-12);
+  svg.appendChild(svgEl("circle",{cx:lx,cy:ly,r:3,fill:color}));
+}
+
+async function fetchHeatmap(cityId){
+  try{
+    const res = await fetch(`${apiBase}/admin/heatmap/${cityId}`);
+    if(!res.ok) return;
+    const data = await res.json();
+    data.zones.forEach(z=>{
+      const rec = zoneEls.get(z.zoneId);
+      if(rec) rec.circle.setAttribute("fill", heatColor(z.intensity).replace("rgb","rgba").replace(")", `,${0.10+0.28*z.intensity})`));
+    });
+  }catch(e){}
+}
+
+function buildStaticMap(){
+  const svg = document.getElementById("mapSvg");
+  svg.innerHTML = "";
+  zoneEls.clear(); businessEls.clear();
+
+  zones.forEach(z=>{
+    const p = project(z.lat, z.lng);
+    const circle = svgEl("circle",{cx:p.x,cy:p.y,r:55,fill:"rgba(41,240,214,0.08)",stroke:"#243447","stroke-width":1});
+    const label = svgEl("text",{x:p.x,y:p.y-63,fill:"#7C8CA0","font-size":11,"font-family":"Inter","text-anchor":"middle"});
+    label.textContent = z.name;
+    svg.appendChild(circle); svg.appendChild(label);
+    zoneEls.set(z.id, {circle, label});
+  });
+  businesses.forEach(b=>{
+    const p = project(b.lat, b.lng);
+    const rect = svgEl("rect",{x:p.x-4,y:p.y-4,width:8,height:8,rx:2,fill:"#8B7CFF"});
+    svg.appendChild(rect);
+    businessEls.set(b.id, rect);
+  });
+}
+
+function getOrCreateDriverEl(driverId){
+  let rec = driverEls.get(driverId);
+  if(!rec){
+    const el = svgEl("circle",{cx:-10,cy:-10,r:5,fill:"#3A4658",opacity:0.35});
+    document.getElementById("mapSvg").appendChild(el);
+    rec = { el, from:{lat:0,lng:0}, to:{lat:0,lng:0}, t0:performance.now() };
+    driverEls.set(driverId, rec);
+  }
+  return rec;
+}
+
+const DRIVER_COLOR = { online:"#29F0D6", assigned:"#FFB74D", delivering:"#FFB74D", offline:"#3A4658" };
+const TICK_MS = 420; // matches backend's driver_moved broadcast cadence
+
+function applyDriverPositions(driverList){
+  const now = performance.now();
+  driverList.forEach(d=>{
+    const rec = getOrCreateDriverEl(d.id);
+    const curr = currentInterpolated(rec, now);
+    rec.from = curr;
+    rec.to = { lat: d.lat, lng: d.lng };
+    rec.t0 = now;
+    rec.status = d.status;
+    rec.el.setAttribute("fill", DRIVER_COLOR[d.status] || "#3A4658");
+    rec.el.setAttribute("opacity", d.status === "offline" ? 0.3 : 0.95);
+  });
+}
+function currentInterpolated(rec, now){
+  const p = Math.min(1, (now - rec.t0) / TICK_MS);
+  return { lat: rec.from.lat + (rec.to.lat-rec.from.lat)*p, lng: rec.from.lng + (rec.to.lng-rec.from.lng)*p };
+}
+
+// Single shared rAF loop drives all driver interpolation + order-line redraws.
+// This is the "avoid full re-renders" / "batch updates" performance path —
+// one loop touching only the attributes that need to move, every frame.
+function animationLoop(){
+  const now = performance.now();
+  driverEls.forEach((rec)=>{
+    const pos = currentInterpolated(rec, now);
+    const p = project(pos.lat, pos.lng);
+    rec.el.setAttribute("cx", p.x); rec.el.setAttribute("cy", p.y);
+  });
+  orderLines.forEach((rec)=>{
+    const driverRec = driverEls.get(rec.driverId);
+    const bizEl = businessEls.get(rec.businessId);
+    if(driverRec && bizEl){
+      const dp = currentInterpolated(driverRec, now);
+      const dpos = project(dp.lat, dp.lng);
+      rec.line.setAttribute("x2", dpos.x); rec.line.setAttribute("y2", dpos.y);
+    }
+  });
+  requestAnimationFrame(animationLoop);
+}
+
+const ORDER_LINE_COLOR = { assigned:"#29F0D6", picked_up:"#FFB74D", in_transit:"#FFB74D" };
+
+function addOrderLine(orderId, businessId, driverId, status){
+  const bizEl = businessEls.get(businessId);
+  if(!bizEl) return;
+  const bx = +bizEl.getAttribute("x")+4, by = +bizEl.getAttribute("y")+4;
+  const line = svgEl("line",{x1:bx,y1:by,x2:bx,y2:by,stroke:ORDER_LINE_COLOR[status]||"#29F0D6","stroke-width":1,"stroke-dasharray":"3,3",opacity:0.55});
+  document.getElementById("mapSvg").appendChild(line);
+  orderLines.set(orderId, { line, driverId, businessId, status });
+}
+function removeOrderLine(orderId){
+  const rec = orderLines.get(orderId);
+  if(rec){ rec.line.remove(); orderLines.delete(orderId); }
+}
+
+function pushTicker(badgeClass, badgeText, text){
+  const el = document.getElementById("ticker");
+  if(el.querySelector(".empty-note")) el.innerHTML = "";
+  const row = document.createElement("div");
+  row.className = "tick-row";
+  const time = new Date().toTimeString().slice(0,8);
+  row.innerHTML = `<span class="tick-time mono">${time}</span><span class="tick-badge ${badgeClass}">${badgeText}</span><span class="tick-text">${text}</span>`;
+  el.prepend(row);
+  while(el.children.length > 50) el.removeChild(el.lastChild);
+}
+
+function showExplanation(text){
+  const box = document.getElementById("explainBox");
+  box.textContent = text;
+  box.classList.add("flash");
+  setTimeout(()=>box.classList.remove("flash"), 400);
+}
+
+function setConn(ok, text){
+  document.getElementById("liveDot").className = "live-dot " + (ok ? "on" : "off");
+  document.getElementById("connStatus").textContent = text;
+}
+
+async function switchCity(cityId){
+  currentCity = cityId;
+  document.querySelectorAll(".city-tab").forEach(t=>t.classList.toggle("active", t.dataset.id===cityId));
+  document.getElementById("mapTitle").textContent = CITY_TABS.find(c=>c.id===cityId).label + " — zone activity & demand heatmap";
+  document.getElementById("ticker").innerHTML = "";
+  document.getElementById("explainBox").textContent = "Waiting for the assignment engine to place a driver…";
+  driverEls.forEach(r=>r.el.remove()); driverEls.clear();
+  orderLines.forEach(r=>r.line.remove()); orderLines.clear();
+  lastMetricValues = {};
+
+  try{
+    const res = await fetch(`${apiBase}/snapshot/${cityId}`);
+    if(!res.ok) throw new Error("snapshot failed");
+    const snap = await res.json();
+    zones = snap.zones; businesses = snap.businesses;
+    computeBounds();
+    buildStaticMap();
+    applyDriverPositions(snap.drivers.map(d=>({...d})));
+    // Snap interpolation start so drivers appear at their real position immediately.
+    driverEls.forEach(rec=>{ rec.from = {...rec.to}; rec.t0 = performance.now()-TICK_MS; });
+    setDemoButtons(snap.demoMode);
+  }catch(e){
+    setConn(false, "backend unreachable — start it with: node server.js");
+    return;
+  }
+
+  await fetchMetrics(cityId);
+  await fetchHeatmap(cityId);
+
+  if(es) es.close();
+  es = new EventSource(`${apiBase}/stream/${cityId}`);
+  es.onopen = ()=> setConn(true, "live");
+  es.onerror = ()=> setConn(false, "reconnecting…");
+
+  es.addEventListener("driver_moved", e=>{
+    const d = JSON.parse(e.data);
+    applyDriverPositions(d.drivers);
+  });
+  es.addEventListener("order_created", e=>{
+    const d = JSON.parse(e.data);
+    pushTicker("b-created","created", `${d.orderId} placed at ${d.businessName}`);
+  });
+  es.addEventListener("order_queued", e=>{
+    const d = JSON.parse(e.data);
+    pushTicker("b-queued","queued", `${d.orderId} queued — no online driver in zone`);
+  });
+  es.addEventListener("order_assigned", e=>{
+    const d = JSON.parse(e.data);
+    addOrderLine(d.orderId, d.businessId, d.driverId, "assigned");
+    pushTicker("b-assigned","assigned", `${d.orderId} → ${d.driverId} · SLA ${d.slaMinutes} min`);
+    if(d.explanation) showExplanation(d.explanation);
+    fetchMetrics(currentCity);
+  });
+  es.addEventListener("order_picked_up", e=>{
+    const d = JSON.parse(e.data);
+    const rec = orderLines.get(d.orderId);
+    if(rec){ rec.status="picked_up"; rec.line.setAttribute("stroke", ORDER_LINE_COLOR.picked_up); }
+    pushTicker("b-picked","picked up", `${d.orderId} picked up by ${d.driverId}`);
+  });
+  es.addEventListener("order_in_transit", e=>{
+    const d = JSON.parse(e.data);
+    pushTicker("b-transit","in transit", `${d.orderId} en route to dropoff`);
+  });
+  es.addEventListener("order_delivered", e=>{
+    const d = JSON.parse(e.data);
+    removeOrderLine(d.orderId);
+    pushTicker("b-delivered","delivered", `${d.orderId} delivered · +₹${d.revenue}`);
+    fetchMetrics(currentCity);
+  });
+  es.addEventListener("sla_violation", e=>{
+    const d = JSON.parse(e.data);
+    removeOrderLine(d.orderId);
+    pushTicker("b-sla","sla breach", `${d.orderId} delivered late (${d.elapsedMin} min)`);
+    fetchMetrics(currentCity);
+  });
+  es.addEventListener("sla_risk", e=>{
+    const d = JSON.parse(e.data);
+    pushTicker("b-sla","sla risk", `${d.orderId} at ${d.elapsedMin} min — approaching SLA`);
+    const rec = orderLines.get(d.orderId);
+    if(rec) rec.line.setAttribute("stroke", "var(--red)");
+  });
+}
+
+function setDemoButtons(active){
+  document.getElementById("demoStartBtn").classList.toggle("active", !!active);
+  document.getElementById("demoStartBtn").disabled = !!active;
+  document.getElementById("demoStopBtn").disabled = !active;
+}
+
+document.getElementById("demoStartBtn").onclick = async ()=>{
+  try{
+    const res = await fetch(`${apiBase}/admin/demo/start`, {method:"POST"});
+    const d = await res.json();
+    setDemoButtons(d.active);
+    pushTicker("b-assigned","demo mode", "Demo mode started — order frequency increased, fleet mostly online.");
+  }catch(e){}
+};
+document.getElementById("demoStopBtn").onclick = async ()=>{
+  try{
+    const res = await fetch(`${apiBase}/admin/demo/stop`, {method:"POST"});
+    const d = await res.json();
+    setDemoButtons(d.active);
+    pushTicker("b-queued","demo mode", "Demo mode stopped — back to baseline simulation rate.");
+  }catch(e){}
+};
+
+function tickClock(){ document.getElementById("clock").textContent = new Date().toTimeString().slice(0,8); }
+
+document.getElementById("apiBase").addEventListener("change", (e)=>{
+  apiBase = e.target.value.trim();
+  switchCity(currentCity);
+});
+
+buildTabs();
+buildMetricsCards();
+setConn(false, "connecting…");
+switchCity("city_hyd");
+requestAnimationFrame(animationLoop);
+setInterval(()=>fetchMetrics(currentCity), 3000);
+setInterval(()=>fetchHeatmap(currentCity), 5000);
+setInterval(tickClock, 1000);
+tickClock();
+</script>
+</body>
+</html>
