@@ -36,6 +36,12 @@ class Router {
   patch(path, handler) {
     this.add("PATCH", path, handler);
   }
+  put(path, handler) {
+    this.add("PUT", path, handler);
+  }
+  delete(path, handler) {
+    this.add("DELETE", path, handler);
+  }
 
   async handle(req, res) {
     const url = new URL(req.url, "http://localhost");

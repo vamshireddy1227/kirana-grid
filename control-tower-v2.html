@@ -33,7 +33,9 @@ body{background:
 .brand-text .name{font-family:'Space Grotesk';font-weight:600;font-size:15px;letter-spacing:0.3px;}
 .brand-text .sub{font-size:11px;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;}
 
-.city-tabs{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:10px;}
+.city-tabs{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:10px;flex-wrap:wrap;max-width:520px;}
+#cityTabs{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;
+  padding:8px 12px;font-size:13px;font-family:'Inter';cursor:pointer;max-width:220px;}
 .city-tab{padding:7px 14px;border-radius:8px;font-size:13px;color:var(--text-muted);cursor:pointer;border:none;
   background:transparent;font-family:'Inter';font-weight:500;transition:all .15s;}
 .city-tab.active{background:var(--cyan-dim);color:var(--cyan);text-shadow:0 0 12px rgba(41,240,214,0.5);}
@@ -118,7 +120,7 @@ body{background:
       <div class="brand-mark">K</div>
       <div class="brand-text"><div class="name">Kirana Grid</div><div class="sub">Control Tower</div></div>
     </div>
-    <div class="city-tabs" id="cityTabs"></div>
+    <select id="cityTabs" class="cart-btn-like"></select>
     <div class="demo-controls">
       <button class="demo-btn start" id="demoStartBtn">▶ Start Demo</button>
       <button class="demo-btn stop" id="demoStopBtn">■ Stop Demo</button>
@@ -200,8 +202,67 @@ body{background:
    ============================================================ */
 
 const CITY_TABS = [
-  { id: "city_hyd", label: "Hyderabad" },
-  { id: "city_vizag", label: "Visakhapatnam" },
+  { id: "city_hyd", label: "Hyderabad", state: "Telangana" },
+  { id: "city_warangal", label: "Warangal", state: "Telangana" },
+  { id: "city_nizamabad", label: "Nizamabad", state: "Telangana" },
+  { id: "city_karimnagar", label: "Karimnagar", state: "Telangana" },
+  { id: "city_adilabad", label: "Adilabad", state: "Telangana" },
+  { id: "city_bhadradri_kothagudem", label: "Bhadradri Kothagudem", state: "Telangana" },
+  { id: "city_hanumakonda", label: "Hanumakonda", state: "Telangana" },
+  { id: "city_jagtial", label: "Jagtial", state: "Telangana" },
+  { id: "city_jangaon", label: "Jangaon", state: "Telangana" },
+  { id: "city_jayashankar_bhupalpally", label: "Jayashankar Bhupalpally", state: "Telangana" },
+  { id: "city_jogulamba_gadwal", label: "Jogulamba Gadwal", state: "Telangana" },
+  { id: "city_kamareddy", label: "Kamareddy", state: "Telangana" },
+  { id: "city_khammam", label: "Khammam", state: "Telangana" },
+  { id: "city_komaram_bheem_asifabad", label: "Komaram Bheem Asifabad", state: "Telangana" },
+  { id: "city_mahabubabad", label: "Mahabubabad", state: "Telangana" },
+  { id: "city_mahabubnagar", label: "Mahabubnagar", state: "Telangana" },
+  { id: "city_mancherial", label: "Mancherial", state: "Telangana" },
+  { id: "city_medak", label: "Medak", state: "Telangana" },
+  { id: "city_medchal_malkajgiri", label: "Medchal-Malkajgiri", state: "Telangana" },
+  { id: "city_mulugu", label: "Mulugu", state: "Telangana" },
+  { id: "city_nagarkurnool", label: "Nagarkurnool", state: "Telangana" },
+  { id: "city_nalgonda", label: "Nalgonda", state: "Telangana" },
+  { id: "city_narayanpet", label: "Narayanpet", state: "Telangana" },
+  { id: "city_nirmal", label: "Nirmal", state: "Telangana" },
+  { id: "city_peddapalli", label: "Peddapalli", state: "Telangana" },
+  { id: "city_rajanna_sircilla", label: "Rajanna Sircilla", state: "Telangana" },
+  { id: "city_rangareddy", label: "Rangareddy", state: "Telangana" },
+  { id: "city_sangareddy", label: "Sangareddy", state: "Telangana" },
+  { id: "city_siddipet", label: "Siddipet", state: "Telangana" },
+  { id: "city_suryapet", label: "Suryapet", state: "Telangana" },
+  { id: "city_vikarabad", label: "Vikarabad", state: "Telangana" },
+  { id: "city_wanaparthy", label: "Wanaparthy", state: "Telangana" },
+  { id: "city_yadadri_bhuvanagiri", label: "Yadadri Bhuvanagiri", state: "Telangana" },
+  { id: "city_vizag", label: "Visakhapatnam", state: "Andhra Pradesh" },
+  { id: "city_vijayawada", label: "Vijayawada", state: "Andhra Pradesh" },
+  { id: "city_guntur", label: "Guntur", state: "Andhra Pradesh" },
+  { id: "city_nellore", label: "Nellore", state: "Andhra Pradesh" },
+  { id: "city_kurnool", label: "Kurnool", state: "Andhra Pradesh" },
+  { id: "city_tirupati", label: "Tirupati", state: "Andhra Pradesh" },
+  { id: "city_srikakulam", label: "Srikakulam", state: "Andhra Pradesh" },
+  { id: "city_parvathipuram_manyam", label: "Parvathipuram Manyam", state: "Andhra Pradesh" },
+  { id: "city_vizianagaram", label: "Vizianagaram", state: "Andhra Pradesh" },
+  { id: "city_anakapalli", label: "Anakapalli", state: "Andhra Pradesh" },
+  { id: "city_alluri_sitharama_raju", label: "Alluri Sitharama Raju", state: "Andhra Pradesh" },
+  { id: "city_polavaram", label: "Polavaram", state: "Andhra Pradesh" },
+  { id: "city_kakinada", label: "Kakinada", state: "Andhra Pradesh" },
+  { id: "city_east_godavari", label: "East Godavari", state: "Andhra Pradesh" },
+  { id: "city_konaseema", label: "Konaseema", state: "Andhra Pradesh" },
+  { id: "city_west_godavari", label: "West Godavari", state: "Andhra Pradesh" },
+  { id: "city_eluru", label: "Eluru", state: "Andhra Pradesh" },
+  { id: "city_krishna", label: "Krishna", state: "Andhra Pradesh" },
+  { id: "city_palnadu", label: "Palnadu", state: "Andhra Pradesh" },
+  { id: "city_bapatla", label: "Bapatla", state: "Andhra Pradesh" },
+  { id: "city_markapuram", label: "Markapuram", state: "Andhra Pradesh" },
+  { id: "city_prakasam", label: "Prakasam", state: "Andhra Pradesh" },
+  { id: "city_nandyal", label: "Nandyal", state: "Andhra Pradesh" },
+  { id: "city_anantapur", label: "Anantapur", state: "Andhra Pradesh" },
+  { id: "city_sri_sathya_sai", label: "Sri Sathya Sai", state: "Andhra Pradesh" },
+  { id: "city_ysr_kadapa", label: "YSR Kadapa", state: "Andhra Pradesh" },
+  { id: "city_annamayya", label: "Annamayya", state: "Andhra Pradesh" },
+  { id: "city_chittoor", label: "Chittoor", state: "Andhra Pradesh" },
 ];
 
 let apiBase = document.getElementById("apiBase").value.trim() || window.location.origin;
@@ -255,14 +316,19 @@ function lerpColor(a,b,k){
 }
 
 function buildTabs(){
-  const wrap = document.getElementById("cityTabs");
-  wrap.innerHTML = "";
-  CITY_TABS.forEach(c=>{
-    const b = document.createElement("button");
-    b.className = "city-tab"; b.dataset.id = c.id; b.textContent = c.label;
-    b.onclick = ()=>switchCity(c.id);
-    wrap.appendChild(b);
+  const sel = document.getElementById("cityTabs");
+  sel.innerHTML = "";
+  ["Telangana", "Andhra Pradesh"].forEach(state=>{
+    const group = document.createElement("optgroup");
+    group.label = state;
+    CITY_TABS.filter(c=>c.state===state).forEach(c=>{
+      const opt = document.createElement("option");
+      opt.value = c.id; opt.textContent = c.label;
+      group.appendChild(opt);
+    });
+    sel.appendChild(group);
   });
+  sel.addEventListener("change", ()=>switchCity(sel.value));
 }
 
 const METRIC_DEFS = [
@@ -482,7 +548,7 @@ function setConn(ok, text){
 
 async function switchCity(cityId){
   currentCity = cityId;
-  document.querySelectorAll(".city-tab").forEach(t=>t.classList.toggle("active", t.dataset.id===cityId));
+  document.getElementById("cityTabs").value = cityId;
   document.getElementById("mapTitle").textContent = CITY_TABS.find(c=>c.id===cityId).label + " — zone activity & demand heatmap";
   document.getElementById("ticker").innerHTML = "";
   document.getElementById("explainBox").textContent = "Waiting for the assignment engine to place a driver…";

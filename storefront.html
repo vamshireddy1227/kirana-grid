@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kirana Grid — Storefront</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#0A0E13; --surface:#111826; --surface-2:#182233; --border:#242F41;
+  --text:#EAF1F7; --text-muted:#7C8CA0;
+  --cyan:#29F0D6; --cyan-dim:rgba(41,240,214,0.15);
+  --amber:#FFB74D; --amber-dim:rgba(255,183,77,0.15);
+  --red:#FF5C6C; --red-dim:rgba(255,92,108,0.15);
+  --violet:#8B7CFF; --green:#7FD99A;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;padding:20px;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.app{max-width:1100px;margin:0 auto;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;margin-bottom:16px;flex-wrap:wrap;gap:12px;}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:600;font-size:15px;}
+.brand-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(160deg,var(--cyan),var(--violet));
+  display:flex;align-items:center;justify-content:center;font-weight:700;color:#06141C;font-size:15px;}
+.mode-tabs{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:10px;}
+.mode-tab{padding:7px 16px;border-radius:8px;font-size:13px;color:var(--text-muted);cursor:pointer;border:none;
+  background:transparent;font-family:'Inter';font-weight:500;}
+.mode-tab.active{background:var(--cyan-dim);color:var(--cyan);}
+.cart-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:8px 16px;
+  border-radius:8px;cursor:pointer;font-family:'Inter';font-size:13px;font-weight:500;}
+.cart-btn .count{background:var(--cyan);color:#06141C;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;font-weight:700;}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+.panel-title{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;font-weight:500;}
+
+.store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+.store-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s;}
+.store-card:hover{border-color:var(--cyan);}
+.store-name{font-weight:600;font-size:14px;margin-bottom:4px;}
+.store-cat{font-size:11px;color:var(--text-muted);text-transform:capitalize;}
+
+.product-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.product-row:last-child{border-bottom:none;}
+.product-name{font-weight:500;font-size:14px;}
+.product-meta{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.qty-controls{display:flex;align-items:center;gap:10px;}
+.qty-btn{width:28px;height:28px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;font-size:15px;}
+.add-btn{background:var(--cyan-dim);color:var(--cyan);border:none;padding:7px 14px;border-radius:7px;
+  font-weight:600;cursor:pointer;font-size:12px;}
+
+.cart-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.cart-row:last-child{border-bottom:none;}
+.totals-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--text-muted);}
+.totals-row.grand{color:var(--text);font-weight:600;font-size:15px;border-top:1px solid var(--border);margin-top:8px;padding-top:10px;}
+.checkout-btn{width:100%;background:var(--cyan);color:#06141C;border:none;padding:12px;border-radius:9px;
+  font-weight:700;cursor:pointer;font-size:14px;margin-top:14px;}
+.checkout-btn:disabled{opacity:0.4;cursor:default;}
+.remove-x{color:var(--red);cursor:pointer;font-size:12px;margin-left:10px;}
+
+.status-badge{font-size:10px;padding:3px 9px;border-radius:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;}
+.s-placed{background:var(--violet);color:#fff;}
+.s-merchant_accepted{background:var(--cyan-dim);color:var(--cyan);}
+.s-preparing{background:var(--amber-dim);color:var(--amber);}
+.s-ready_for_pickup, .s-assigned{background:var(--cyan-dim);color:var(--cyan);}
+.s-picked_up, .s-in_transit{background:var(--amber-dim);color:var(--amber);}
+.s-delivered{background:rgba(120,200,140,0.15);color:var(--green);}
+.s-merchant_rejected, .s-cancelled, .s-failed{background:var(--red-dim);color:var(--red);}
+
+.order-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+.order-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.order-id{font-family:'JetBrains Mono';font-size:12px;color:var(--text-muted);}
+.merchant-actions{display:flex;gap:8px;margin-top:12px;}
+.mbtn{border:none;padding:7px 14px;border-radius:7px;font-weight:600;cursor:pointer;font-size:12px;}
+.mbtn.accept{background:var(--cyan-dim);color:var(--cyan);}
+.mbtn.reject{background:var(--red-dim);color:var(--red);}
+.mbtn.prepare, .mbtn.ready{background:var(--amber-dim);color:var(--amber);}
+
+.empty-note{font-size:13px;color:var(--text-muted);padding:20px 0;text-align:center;}
+.confirm-box{background:var(--surface-2);border:1px solid var(--green);border-radius:10px;padding:16px;text-align:center;}
+.confirm-box .big{font-size:18px;font-weight:600;color:var(--green);margin-bottom:6px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><div class="brand-mark">K</div>Kirana Grid Storefront</div>
+    <select id="citySelect" class="cart-btn" style="cursor:pointer;max-width:200px;">
+      <optgroup label="Telangana">
+      <option value="city_hyd" data-lat="17.4156" data-lng="78.4347">Hyderabad</option>
+      <option value="city_warangal" data-lat="18.0068" data-lng="79.5589">Warangal</option>
+      <option value="city_nizamabad" data-lat="18.6725" data-lng="78.0941">Nizamabad</option>
+      <option value="city_karimnagar" data-lat="18.4392" data-lng="79.1288">Karimnagar</option>
+      <option value="city_adilabad" data-lat="19.6641" data-lng="78.532">Adilabad</option>
+      <option value="city_bhadradri_kothagudem" data-lat="17.5561" data-lng="80.6198">Bhadradri Kothagudem</option>
+      <option value="city_hanumakonda" data-lat="18.0088" data-lng="79.5541">Hanumakonda</option>
+      <option value="city_jagtial" data-lat="18.7909" data-lng="78.911">Jagtial</option>
+      <option value="city_jangaon" data-lat="17.7264" data-lng="79.1804">Jangaon</option>
+      <option value="city_jayashankar_bhupalpally" data-lat="18.4009" data-lng="79.9106">Jayashankar Bhupalpally</option>
+      <option value="city_jogulamba_gadwal" data-lat="16.2311" data-lng="77.8058">Jogulamba Gadwal</option>
+      <option value="city_kamareddy" data-lat="18.3204" data-lng="78.3499">Kamareddy</option>
+      <option value="city_khammam" data-lat="17.2473" data-lng="80.1514">Khammam</option>
+      <option value="city_komaram_bheem_asifabad" data-lat="19.3667" data-lng="79.2833">Komaram Bheem Asifabad</option>
+      <option value="city_mahabubabad" data-lat="17.5983" data-lng="80.0022">Mahabubabad</option>
+      <option value="city_mahabubnagar" data-lat="16.7488" data-lng="77.9855">Mahabubnagar</option>
+      <option value="city_mancherial" data-lat="18.8712" data-lng="79.4639">Mancherial</option>
+      <option value="city_medak" data-lat="18.046" data-lng="78.2669">Medak</option>
+      <option value="city_medchal_malkajgiri" data-lat="17.6295" data-lng="78.4801">Medchal-Malkajgiri</option>
+      <option value="city_mulugu" data-lat="18.19" data-lng="80.01">Mulugu</option>
+      <option value="city_nagarkurnool" data-lat="16.4831" data-lng="78.3255">Nagarkurnool</option>
+      <option value="city_nalgonda" data-lat="17.0575" data-lng="79.2685">Nalgonda</option>
+      <option value="city_narayanpet" data-lat="16.7444" data-lng="77.4936">Narayanpet</option>
+      <option value="city_nirmal" data-lat="19.0968" data-lng="78.3441">Nirmal</option>
+      <option value="city_peddapalli" data-lat="18.6118" data-lng="79.3746">Peddapalli</option>
+      <option value="city_rajanna_sircilla" data-lat="18.3897" data-lng="78.8397">Rajanna Sircilla</option>
+      <option value="city_rangareddy" data-lat="17.2537" data-lng="78.4685">Rangareddy</option>
+      <option value="city_sangareddy" data-lat="17.6255" data-lng="78.0873">Sangareddy</option>
+      <option value="city_siddipet" data-lat="18.1018" data-lng="78.848">Siddipet</option>
+      <option value="city_suryapet" data-lat="17.14" data-lng="79.62">Suryapet</option>
+      <option value="city_vikarabad" data-lat="17.3378" data-lng="77.9042">Vikarabad</option>
+      <option value="city_wanaparthy" data-lat="16.3607" data-lng="78.0649">Wanaparthy</option>
+      <option value="city_yadadri_bhuvanagiri" data-lat="17.5167" data-lng="78.8833">Yadadri Bhuvanagiri</option>
+      </optgroup>
+      <optgroup label="Andhra Pradesh">
+      <option value="city_vizag" data-lat="17.7326" data-lng="83.3332">Visakhapatnam</option>
+      <option value="city_vijayawada" data-lat="16.514" data-lng="80.6252">Vijayawada</option>
+      <option value="city_guntur" data-lat="16.3033" data-lng="80.44">Guntur</option>
+      <option value="city_nellore" data-lat="14.4426" data-lng="79.9865">Nellore</option>
+      <option value="city_kurnool" data-lat="15.8281" data-lng="78.0373">Kurnool</option>
+      <option value="city_tirupati" data-lat="13.6339" data-lng="79.4205">Tirupati</option>
+      <option value="city_srikakulam" data-lat="18.2949" data-lng="83.8938">Srikakulam</option>
+      <option value="city_parvathipuram_manyam" data-lat="18.7833" data-lng="83.4333">Parvathipuram Manyam</option>
+      <option value="city_vizianagaram" data-lat="18.1167" data-lng="83.4167">Vizianagaram</option>
+      <option value="city_anakapalli" data-lat="17.691" data-lng="83.0037">Anakapalli</option>
+      <option value="city_alluri_sitharama_raju" data-lat="18.05" data-lng="82.6667">Alluri Sitharama Raju</option>
+      <option value="city_polavaram" data-lat="17.439" data-lng="81.775">Polavaram</option>
+      <option value="city_kakinada" data-lat="16.9891" data-lng="82.2475">Kakinada</option>
+      <option value="city_east_godavari" data-lat="17.0005" data-lng="81.804">East Godavari</option>
+      <option value="city_konaseema" data-lat="16.5788" data-lng="82.0064">Konaseema</option>
+      <option value="city_west_godavari" data-lat="16.5449" data-lng="81.5212">West Godavari</option>
+      <option value="city_eluru" data-lat="16.7107" data-lng="81.0952">Eluru</option>
+      <option value="city_krishna" data-lat="16.1875" data-lng="81.1389">Krishna</option>
+      <option value="city_palnadu" data-lat="16.2357" data-lng="80.0499">Palnadu</option>
+      <option value="city_bapatla" data-lat="15.9046" data-lng="80.468">Bapatla</option>
+      <option value="city_markapuram" data-lat="15.735" data-lng="79.27">Markapuram</option>
+      <option value="city_prakasam" data-lat="15.5057" data-lng="80.0499">Prakasam</option>
+      <option value="city_nandyal" data-lat="15.4785" data-lng="78.4835">Nandyal</option>
+      <option value="city_anantapur" data-lat="14.6819" data-lng="77.6006">Anantapur</option>
+      <option value="city_sri_sathya_sai" data-lat="14.1594" data-lng="77.8107">Sri Sathya Sai</option>
+      <option value="city_ysr_kadapa" data-lat="14.4753" data-lng="78.8298">YSR Kadapa</option>
+      <option value="city_annamayya" data-lat="14.05" data-lng="78.75">Annamayya</option>
+      <option value="city_chittoor" data-lat="13.2172" data-lng="79.1003">Chittoor</option>
+      </optgroup>
+    </select>
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="browse">Browse</button>
+      <button class="mode-tab" data-mode="orders">My Orders</button>
+      <button class="mode-tab" data-mode="merchant">Merchant View</button>
+    </div>
+    <button class="cart-btn" id="cartBtn">🛒 Cart <span class="count" id="cartCount">0</span></button>
+  </div>
+
+  <div id="view-browse">
+    <div class="panel" id="storeListPanel">
+      <div class="panel-title" id="storeListTitle">Nearby stores — Hyderabad</div>
+      <div class="store-grid" id="storeGrid"></div>
+    </div>
+    <div class="panel" id="productPanel" style="display:none;">
+      <div class="panel-title" id="productPanelTitle">Products</div>
+      <div id="productList"></div>
+    </div>
+  </div>
+
+  <div id="view-cart" class="panel" style="display:none;">
+    <div class="panel-title">Your cart</div>
+    <div id="cartItems"></div>
+    <div id="cartTotals"></div>
+    <button class="checkout-btn" id="checkoutBtn">Place Order</button>
+    <div id="checkoutResult" style="margin-top:14px;"></div>
+  </div>
+
+  <div id="view-orders" class="panel" style="display:none;">
+    <div class="panel-title">My order history</div>
+    <div id="orderHistoryList"></div>
+  </div>
+
+  <div id="view-merchant" class="panel" style="display:none;">
+    <div class="panel-title">Merchant order queue — <span id="merchantStoreName"></span></div>
+    <div id="merchantOrderList"></div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const CUSTOMER_ID = localStorage.getItem("kg_customer_id") ||
+  (() => { const id = "cust_" + Math.random().toString(36).slice(2, 10); localStorage.setItem("kg_customer_id", id); return id; })();
+
+let currentBusiness = null;
+let merchantBusinessId = null;
+
+function el(sel){ return document.querySelector(sel); }
+function money(n){ return "₹" + Number(n).toFixed(2); }
+
+// ── View switching ───────────────────────────────
+document.querySelectorAll(".mode-tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".mode-tab").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  ["browse","cart","orders","merchant"].forEach(v => el("#view-"+v).style.display = "none");
+  const mode = t.dataset.mode;
+  el("#view-"+mode).style.display = "block";
+  if (mode === "orders") loadOrderHistory();
+  if (mode === "merchant") loadMerchantView();
+});
+el("#cartBtn").onclick = () => {
+  document.querySelectorAll(".mode-tab").forEach(x => x.classList.remove("active"));
+  ["browse","orders","merchant"].forEach(v => el("#view-"+v).style.display = "none");
+  el("#view-cart").style.display = "block";
+  renderCart();
+};
+
+// ── Browse stores ───────────────────────────────
+async function loadStores(){
+  const sel = el("#citySelect");
+  const opt = sel.options[sel.selectedIndex];
+  const lat = opt.dataset.lat, lng = opt.dataset.lng;
+  el("#storeListTitle").textContent = "Nearby stores — " + opt.textContent;
+  el("#productPanel").style.display = "none"; // switching city closes any open store view
+
+  const res = await fetch(`${API}/businesses/nearby?lat=${lat}&lng=${lng}&radius=15`);
+  const data = await res.json();
+  const grid = el("#storeGrid");
+  grid.innerHTML = "";
+  if (data.results.length === 0){
+    grid.innerHTML = `<div class="empty-note">No stores seeded in this city yet.</div>`;
+    return;
+  }
+  data.results.slice(0, 12).forEach(b => {
+    const card = document.createElement("div");
+    card.className = "store-card";
+    card.innerHTML = `<div class="store-name">${b.name}</div><div class="store-cat">${b.category} · ${b.distanceKm}km</div>`;
+    card.onclick = () => openStore(b.id, b.name);
+    grid.appendChild(card);
+  });
+}
+el("#citySelect").addEventListener("change", loadStores);
+
+async function openStore(businessId, name){
+  currentBusiness = businessId;
+  merchantBusinessId = businessId;
+  el("#merchantStoreName").textContent = name;
+  const res = await fetch(`${API}/businesses/${businessId}/products`);
+  const data = await res.json();
+  el("#productPanel").style.display = "block";
+  el("#productPanelTitle").textContent = "Products — " + name;
+  const list = el("#productList");
+  list.innerHTML = "";
+  data.products.forEach(p => {
+    const row = document.createElement("div");
+    row.className = "product-row";
+    row.innerHTML = `
+      <div><div class="product-name">${p.name}</div><div class="product-meta">${money(p.price)} · ${p.stock_qty} in stock</div></div>
+      <button class="add-btn" data-pid="${p.id}">Add to cart</button>`;
+    row.querySelector(".add-btn").onclick = () => addToCart(p.id);
+    list.appendChild(row);
+  });
+}
+
+async function addToCart(productId){
+  const res = await fetch(`${API}/cart/items`, {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ customerId: CUSTOMER_ID, productId, quantity: 1 })
+  });
+  const data = await res.json();
+  if (data.error) { alert(data.error === "cart_single_business" ? "Your cart has items from a different store — clear it first from the Cart tab." : data.error); return; }
+  updateCartCount(data);
+}
+
+function updateCartCount(cart){
+  el("#cartCount").textContent = cart.items.reduce((s,i)=>s+i.quantity, 0);
+}
+
+async function renderCart(){
+  const res = await fetch(`${API}/cart?customerId=${CUSTOMER_ID}`);
+  const cart = await res.json();
+  updateCartCount(cart);
+  const itemsEl = el("#cartItems");
+  if (cart.items.length === 0){
+    itemsEl.innerHTML = `<div class="empty-note">Your cart is empty — browse a store to add items.</div>`;
+    el("#cartTotals").innerHTML = "";
+    el("#checkoutBtn").disabled = true;
+    return;
+  }
+  itemsEl.innerHTML = "";
+  cart.items.forEach(i => {
+    const row = document.createElement("div");
+    row.className = "cart-row";
+    row.innerHTML = `<span>${i.product_name} × ${i.quantity}</span><span>${money(i.subtotal)} <span class="remove-x">✕</span></span>`;
+    row.querySelector(".remove-x").onclick = async () => {
+      await fetch(`${API}/cart/items/${i.id}?customerId=${CUSTOMER_ID}`, { method: "DELETE" });
+      renderCart();
+    };
+    itemsEl.appendChild(row);
+  });
+  const deliveryEst = 25, taxEst = +(cart.subtotal * 0.05).toFixed(2);
+  el("#cartTotals").innerHTML = `
+    <div class="totals-row"><span>Subtotal</span><span>${money(cart.subtotal)}</span></div>
+    <div class="totals-row"><span>Delivery fee (est.)</span><span>${money(deliveryEst)}</span></div>
+    <div class="totals-row"><span>Tax (est. 5%)</span><span>${money(taxEst)}</span></div>
+    <div class="totals-row grand"><span>Estimated total</span><span>${money(cart.subtotal + deliveryEst + taxEst)}</span></div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Final total is always calculated by the server at checkout — this is an estimate.</div>`;
+  el("#checkoutBtn").disabled = false;
+}
+
+el("#checkoutBtn").onclick = async () => {
+  el("#checkoutBtn").disabled = true;
+  const res = await fetch(`${API}/checkout`, {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      customerId: CUSTOMER_ID,
+      dropoff: (() => {
+        const opt = el("#citySelect").options[el("#citySelect").selectedIndex];
+        return { lat: +opt.dataset.lat + (Math.random()-0.5)*0.01, lng: +opt.dataset.lng + (Math.random()-0.5)*0.01 };
+      })(),
+      paymentMethod: "cod",
+    })
+  });
+  const data = await res.json();
+  if (data.error){
+    el("#checkoutResult").innerHTML = `<div style="color:var(--red);">Checkout failed: ${data.error}</div>`;
+    el("#checkoutBtn").disabled = false;
+    return;
+  }
+  el("#checkoutResult").innerHTML = `
+    <div class="confirm-box">
+      <div class="big">Order placed!</div>
+      <div class="mono" style="font-size:12px;color:var(--text-muted);">${data.order.id}</div>
+      <div style="margin-top:8px;">${data.items.length} item(s) · Total ${money(data.order.total)}</div>
+    </div>`;
+  renderCart();
+};
+
+// ── Order history ───────────────────────────────
+async function loadOrderHistory(){
+  const res = await fetch(`${API}/customers/${CUSTOMER_ID}/orders`);
+  const data = await res.json();
+  const list = el("#orderHistoryList");
+  if (data.orders.length === 0){ list.innerHTML = `<div class="empty-note">No orders yet — place one from Browse.</div>`; return; }
+  list.innerHTML = "";
+  [...data.orders].reverse().forEach(({order, items}) => {
+    const card = document.createElement("div");
+    card.className = "order-card";
+    card.innerHTML = `
+      <div class="order-head">
+        <span class="order-id">${order.id}</span>
+        <span class="status-badge s-${order.status}">${order.status.replace(/_/g," ")}</span>
+      </div>
+      <div style="font-size:13px;">${items.map(i => `${i.product_name_snapshot} × ${i.quantity}`).join(", ")}</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">Total: ${money(order.total)} · ${new Date(order.placed_at).toLocaleString()}</div>`;
+    list.appendChild(card);
+  });
+}
+
+// ── Merchant view ───────────────────────────────
+async function loadMerchantView(){
+  if (!merchantBusinessId){ el("#merchantOrderList").innerHTML = `<div class="empty-note">Open a store from Browse first to view its order queue.</div>`; return; }
+  const res = await fetch(`${API}/businesses/${merchantBusinessId}/orders`);
+  const data = await res.json();
+  const list = el("#merchantOrderList");
+  if (data.orders.length === 0){ list.innerHTML = `<div class="empty-note">No orders for this store yet.</div>`; return; }
+  list.innerHTML = "";
+  [...data.orders].reverse().forEach(({order, items}) => {
+    const card = document.createElement("div");
+    card.className = "order-card";
+    const actions = {
+      placed: [["Accept","accept"],["Reject","reject"]],
+      merchant_accepted: [["Start Preparing","prepare"]],
+      preparing: [["Mark Ready for Pickup","ready"]],
+    }[order.status] || [];
+    card.innerHTML = `
+      <div class="order-head">
+        <span class="order-id">${order.id}</span>
+        <span class="status-badge s-${order.status}">${order.status.replace(/_/g," ")}</span>
+      </div>
+      <div style="font-size:13px;">${items.map(i => `${i.product_name_snapshot} × ${i.quantity}`).join(", ")}</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Total: ${money(order.total)}</div>
+      <div class="merchant-actions">${actions.map(([label,action]) =>
+        `<button class="mbtn ${action}" data-order="${order.id}" data-action="${action}">${label}</button>`).join("")}</div>`;
+    card.querySelectorAll(".mbtn").forEach(btn => btn.onclick = async () => {
+      await fetch(`${API}/orders/${btn.dataset.order}/${btn.dataset.action}`, { method: "POST" });
+      loadMerchantView();
+    });
+    list.appendChild(card);
+  });
+}
+
+loadStores();
+fetch(`${API}/cart?customerId=${CUSTOMER_ID}`).then(r=>r.json()).then(updateCartCount);
+</script>
+</body>
+</html>
