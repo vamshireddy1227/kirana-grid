@@ -32,6 +32,24 @@ function register(router) {
   router.get("/admin/demo/status", (ctx, res) => {
     json(res, 200, demoService.status());
   });
+
+  // ── Live Mode — the opposite of Demo Mode ────────────────────────────
+  // Demo mode speeds fake activity up. Live Mode turns it off entirely,
+  // so the only orders that exist come from real checkouts, and the only
+  // driver movement that isn't real GPS is drivers nobody has claimed yet.
+  router.post("/admin/live-mode/start", (ctx, res) => {
+    db.simulationState.autoOrdersEnabled = false;
+    json(res, 200, { autoOrdersEnabled: false });
+  });
+
+  router.post("/admin/live-mode/stop", (ctx, res) => {
+    db.simulationState.autoOrdersEnabled = true;
+    json(res, 200, { autoOrdersEnabled: true });
+  });
+
+  router.get("/admin/live-mode/status", (ctx, res) => {
+    json(res, 200, { autoOrdersEnabled: db.simulationState.autoOrdersEnabled });
+  });
 }
 
 module.exports = { register };

@@ -30,6 +30,7 @@ function pointInZone(zone) {
 // instead of aimless drifting.
 function moveDrivers() {
   db.drivers.forEach((d) => {
+    if (d.real_controlled) return; // this driver's position comes from real GPS reports, not simulation
     const dx = d.target.lat - d.lat;
     const dy = d.target.lng - d.lng;
     const dist = Math.hypot(dx, dy);
@@ -57,9 +58,11 @@ function moveDrivers() {
   });
 }
 
-function spawnOrder() {
-  const openBusinesses = db.businesses.filter((b) => b.is_open);
-  const business = openBusinesses[Math.floor(Math.random() * openBusinesses.length)];
+function spawnOrder(targetCityId) {
+  const pool = targetCityId
+    ? db.businesses.filter((b) => b.is_open && b.city_id === targetCityId)
+    : db.businesses.filter((b) => b.is_open);
+  const business = pool[Math.floor(Math.random() * pool.length)];
   if (!business) return;
   const zone = db.findZone(business.zone_id);
 
@@ -172,12 +175,28 @@ function runSlaSweep() {
   });
 }
 
+let coverageIndex = 0;
+
 function start() {
   setInterval(moveDrivers, 400);
   setInterval(() => {
-    // Demo mode raises spawn frequency by allowing a probabilistic extra
-    // spawn per tick, rather than restarting the interval at a new period.
-    spawnOrder();
+    if (!db.simulationState.autoOrdersEnabled) return; // Live Mode: no fake orders, only real checkouts
+
+    // Two spawn mechanisms, deliberately different purposes:
+    // (1) Random spawning across all businesses, scaled to business count —
+    //     gives busier/bigger cities proportionally more activity.
+    // (2) Round-robin coverage — every tick, guarantee one order in the
+    //     *next* city in rotation, regardless of how "lucky" it's been.
+    //     With 61 cities at a 2.2s tick, every city sees at least one
+    //     order within ~2.2 minutes even if random chance never favors it —
+    //     that's what actually fixes "I switched to city X and it's dead."
+    const baseOrdersPerTick = Math.max(1, Math.round(db.businesses.length / 90));
+    for (let i = 0; i < baseOrdersPerTick; i++) spawnOrder();
+
+    const nextCity = db.cities[coverageIndex % db.cities.length];
+    coverageIndex++;
+    spawnOrder(nextCity.id);
+
     if (db.demoState.active && Math.random() < (db.demoState.spawnMultiplier - 1) / db.demoState.spawnMultiplier) {
       spawnOrder();
     }

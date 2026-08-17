@@ -232,9 +232,19 @@ zones.forEach((z, zi) => {
       on_time_rate: +(80 + Math.random() * 20).toFixed(1),
       current_batch_load: 0,
       target: { lat: jitter(z.lat, 0.02), lng: jitter(z.lng, 0.02) },
+      // false = simulator moves this driver (random wander). true = a real
+      // person is controlling it via the Driver App — their actual reported
+      // GPS position drives it, and the simulator must never overwrite it.
+      real_controlled: false,
     });
   }
 });
+
+// Global controls for "how real is this system right now" — separate from
+// demo mode, which speeds up fake activity. This does the opposite: turns
+// fake activity off entirely, so only orders a real customer placed via
+// checkout, and drivers a real person is actually operating, exist.
+const simulationState = { autoOrdersEnabled: true };
 
 const orders = [];
 const orderEvents = [];
@@ -305,6 +315,7 @@ module.exports = {
   cityRevenue,
   metrics,
   demoState,
+  simulationState,
   recordOrderCreated,
   recordOrderCompleted,
   decayZoneDemand,

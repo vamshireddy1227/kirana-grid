@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kirana Grid — Driver App</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#0A0E13; --surface:#111826; --surface-2:#182233; --border:#242F41;
+  --text:#EAF1F7; --text-muted:#7C8CA0;
+  --cyan:#29F0D6; --cyan-dim:rgba(41,240,214,0.15);
+  --amber:#FFB74D; --amber-dim:rgba(255,183,77,0.15);
+  --red:#FF5C6C; --red-dim:rgba(255,92,108,0.15); --green:#7FD99A;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;padding:16px;max-width:480px;margin:0 auto;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.brand-mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(160deg,var(--cyan),#8B7CFF);
+  display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;color:#06141C;}
+.brand-text .name{font-family:'Space Grotesk';font-weight:600;font-size:15px;}
+.brand-text .sub{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
+.panel-title{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;font-weight:500;}
+select, button{width:100%;padding:12px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);
+  color:var(--text);font-family:'Inter';font-size:14px;margin-bottom:10px;cursor:pointer;}
+button.primary{background:var(--cyan);color:#06141C;border:none;font-weight:700;}
+button.danger{background:var(--red-dim);color:var(--red);border:none;font-weight:700;}
+button:disabled{opacity:0.4;cursor:default;}
+
+.gps-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);margin-bottom:10px;}
+.gps-dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted);}
+.gps-dot.live{background:var(--green);box-shadow:0 0 8px 1px rgba(127,217,154,.6);animation:pulse 1.8s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(127,217,154,.5);}70%{box-shadow:0 0 0 8px rgba(127,217,154,0);}100%{box-shadow:0 0 0 0 rgba(127,217,154,0);}}
+.coords{font-size:12px;color:var(--text-muted);}
+
+.status-badge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;}
+.s-online{background:var(--cyan-dim);color:var(--cyan);}
+.s-offline{background:var(--surface-2);color:var(--text-muted);}
+.s-assigned, .s-picked_up, .s-in_transit{background:var(--amber-dim);color:var(--amber);}
+
+.order-card{background:var(--surface-2);border-radius:10px;padding:14px;margin-top:10px;}
+.order-id{font-family:'JetBrains Mono';font-size:11px;color:var(--text-muted);margin-bottom:6px;}
+.item-line{font-size:13px;margin:2px 0;}
+.empty-note{font-size:13px;color:var(--text-muted);text-align:center;padding:16px 0;}
+.hint{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5;}
+</style>
+</head>
+<body>
+  <div class="brand">
+    <div class="brand-mark">K</div>
+    <div class="brand-text"><div class="name">Kirana Grid</div><div class="sub">Driver App</div></div>
+  </div>
+
+  <div class="panel" id="setupPanel">
+    <div class="panel-title">Pick your city</div>
+    <select id="citySelect"></select>
+    <div class="panel-title" style="margin-top:14px;">Pick your driver profile</div>
+    <select id="driverSelect"></select>
+    <div class="hint">No login exists in this demo — you're picking an existing driver record to control with your real device GPS. Everyone else sees your real position live.</div>
+    <button class="primary" id="goOnlineBtn" style="margin-top:12px;">Go Online</button>
+  </div>
+
+  <div class="panel" id="controlPanel" style="display:none;">
+    <div class="panel-title">Your status</div>
+    <span class="status-badge" id="statusBadge">offline</span>
+    <div class="gps-status"><span class="gps-dot" id="gpsDot"></span><span id="gpsText">GPS inactive</span></div>
+    <div class="coords mono" id="coordsText"></div>
+    <button class="danger" id="goOfflineBtn">Go Offline</button>
+  </div>
+
+  <div class="panel" id="orderPanel" style="display:none;">
+    <div class="panel-title">Current assignment</div>
+    <div id="orderContent"></div>
+  </div>
+
+<script>
+const API = window.location.origin;
+let currentDriverId = null;
+let watchId = null;
+let orderPollTimer = null;
+let lastLocationPost = 0;
+
+function el(sel){ return document.querySelector(sel); }
+
+async function loadCities(){
+  const res = await fetch(`${API}/cities`);
+  const data = await res.json();
+  const sel = el("#citySelect");
+  const seen = new Set();
+  data.zones.forEach(z=>{
+    if (seen.has(z.city_id)) return;
+    seen.add(z.city_id);
+    const city = data.cities.find(c=>c.id===z.city_id);
+    const opt = document.createElement("option");
+    opt.value = city.id; opt.textContent = city.name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener("change", loadRoster);
+  loadRoster();
+}
+
+async function loadRoster(){
+  const cityId = el("#citySelect").value;
+  const res = await fetch(`${API}/drivers/roster?cityId=${cityId}`);
+  const data = await res.json();
+  const sel = el("#driverSelect");
+  sel.innerHTML = "";
+  data.drivers.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = `${d.id} · ${d.vehicle_type} · ${d.real_controlled ? "already claimed by someone" : d.status}`;
+    sel.appendChild(opt);
+  });
+}
+
+el("#goOnlineBtn").onclick = async () => {
+  currentDriverId = el("#driverSelect").value;
+  if (!navigator.geolocation){
+    alert("Your browser doesn't support geolocation.");
+    return;
+  }
+  el("#gpsText").textContent = "Requesting GPS permission…";
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { latitude, longitude } = pos.coords;
+    await fetch(`${API}/drivers/${currentDriverId}/go-online-real`, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ lat: latitude, lng: longitude })
+    });
+    enterOnlineState(latitude, longitude);
+    startWatching();
+    startOrderPolling();
+  }, (err) => {
+    el("#gpsText").textContent = "GPS permission denied — can't go online without it.";
+  }, { enableHighAccuracy: true });
+};
+
+function enterOnlineState(lat, lng){
+  el("#setupPanel").style.display = "none";
+  el("#controlPanel").style.display = "block";
+  el("#orderPanel").style.display = "block";
+  el("#statusBadge").textContent = "online";
+  el("#statusBadge").className = "status-badge s-online";
+  el("#goOnlineBtn").style.display = "none";
+  el("#goOfflineBtn").style.display = "block";
+  el("#gpsDot").classList.add("live");
+  el("#gpsText").textContent = "GPS live — your real position is being reported";
+  el("#coordsText").textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+let lastFixAt = 0;
+let staleCheckTimer = null;
+
+function startWatching(){
+  watchId = navigator.geolocation.watchPosition((pos) => {
+    const { latitude, longitude } = pos.coords;
+    lastFixAt = Date.now();
+    el("#coordsText").textContent = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    el("#gpsText").textContent = "GPS live — your real position is being reported";
+    el("#gpsDot").classList.add("live");
+    // Throttle network posts to at most once every 3s even if the browser
+    // fires position updates faster — the map only redraws a few times a
+    // second anyway, no need to flood the server.
+    const now = Date.now();
+    if (now - lastLocationPost < 3000) return;
+    lastLocationPost = now;
+    fetch(`${API}/drivers/${currentDriverId}/location`, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ lat: latitude, lng: longitude })
+    });
+  }, (err) => {
+    // watchPosition can fire transient errors (briefly indoors, a momentary
+    // GPS hiccup) even while otherwise working fine — don't panic on the
+    // first one. Only declare the signal actually lost if 15+ seconds have
+    // passed with no successful fix at all.
+    if (Date.now() - lastFixAt > 15000) {
+      el("#gpsText").textContent = "GPS signal lost" + (err.message ? " — " + err.message : "");
+      el("#gpsDot").classList.remove("live");
+    }
+  }, { enableHighAccuracy: true, maximumAge: 2000 });
+
+  // Backstop: even if watchPosition stops calling either callback entirely
+  // (happens on some devices when the tab is backgrounded), catch that too.
+  staleCheckTimer = setInterval(() => {
+    if (lastFixAt && Date.now() - lastFixAt > 15000) {
+      el("#gpsText").textContent = "GPS signal lost — no update in 15s";
+      el("#gpsDot").classList.remove("live");
+    }
+  }, 5000);
+}
+
+el("#goOfflineBtn").onclick = async () => {
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  if (staleCheckTimer) clearInterval(staleCheckTimer);
+  if (orderPollTimer) clearInterval(orderPollTimer);
+  await fetch(`${API}/drivers/${currentDriverId}/go-offline-real`, { method: "POST" });
+  el("#setupPanel").style.display = "block";
+  el("#controlPanel").style.display = "none";
+  el("#orderPanel").style.display = "none";
+  el("#goOnlineBtn").style.display = "block";
+  el("#goOfflineBtn").style.display = "none";
+  currentDriverId = null;
+  loadRoster();
+};
+
+function startOrderPolling(){
+  loadCurrentOrder();
+  orderPollTimer = setInterval(loadCurrentOrder, 4000);
+}
+
+async function loadCurrentOrder(){
+  if (!currentDriverId) return;
+  const res = await fetch(`${API}/drivers/${currentDriverId}/current-order`);
+  const data = await res.json();
+  const content = el("#orderContent");
+  if (!data.order){
+    content.innerHTML = `<div class="empty-note">No order assigned right now — stay online, one will come through automatically.</div>`;
+    el("#statusBadge").textContent = "online";
+    el("#statusBadge").className = "status-badge s-online";
+    return;
+  }
+  const { order, business, items } = data;
+  el("#statusBadge").textContent = order.status.replace(/_/g," ");
+  el("#statusBadge").className = "status-badge s-" + order.status;
+
+  const nextAction = {
+    assigned: { label: "Mark Picked Up", next: "picked_up" },
+    picked_up: { label: "Mark In Transit", next: "in_transit" },
+    in_transit: { label: "Mark Delivered", next: "delivered" },
+  }[order.status];
+
+  content.innerHTML = `
+    <div class="order-card">
+      <div class="order-id">${order.id}</div>
+      <div style="font-weight:600;margin-bottom:6px;">${business ? business.name : ""}</div>
+      ${(items||[]).map(i => `<div class="item-line">${i.product_name_snapshot} × ${i.quantity}</div>`).join("")}
+      <div style="font-size:13px;color:var(--text-muted);margin-top:8px;">Total: ₹${order.total || "—"}</div>
+      ${nextAction ? `<button class="primary" style="margin-top:12px;" id="actionBtn">${nextAction.label}</button>` : ""}
+    </div>`;
+
+  const btn = document.getElementById("actionBtn");
+  if (btn) btn.onclick = async () => {
+    btn.disabled = true;
+    await fetch(`${API}/orders/${order.id}/status`, {
+      method: "PATCH", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ status: nextAction.next })
+    });
+    loadCurrentOrder();
+  };
+}
+
+loadCities();
+</script>
+</body>
+</html>

@@ -124,6 +124,8 @@ body{background:
     <div class="demo-controls">
       <button class="demo-btn start" id="demoStartBtn">▶ Start Demo</button>
       <button class="demo-btn stop" id="demoStopBtn">■ Stop Demo</button>
+      <button class="demo-btn stop" id="liveModeBtn" title="Turns off all fake orders — only real checkouts remain">🔴 Live Mode: Off</button>
+      <a href="/driver" target="_blank" class="demo-btn" style="text-decoration:none;display:inline-block;">🚗 Driver App</a>
     </div>
     <div class="api-row">
       <span class="status-text">API</span>
@@ -651,6 +653,31 @@ document.getElementById("demoStopBtn").onclick = async ()=>{
     pushTicker("b-queued","demo mode", "Demo mode stopped — back to baseline simulation rate.");
   }catch(e){}
 };
+
+let liveModeOn = false;
+function setLiveModeButton(on){
+  liveModeOn = on;
+  const btn = document.getElementById("liveModeBtn");
+  btn.textContent = on ? "🔴 Live Mode: ON" : "🔴 Live Mode: Off";
+  btn.classList.toggle("active", on);
+}
+document.getElementById("liveModeBtn").onclick = async ()=>{
+  try{
+    const endpoint = liveModeOn ? "stop" : "start"; // "start" here means start Live Mode, i.e. stop fake orders
+    const res = await fetch(`${apiBase}/admin/live-mode/${endpoint}`, {method:"POST"});
+    const d = await res.json();
+    setLiveModeButton(!d.autoOrdersEnabled);
+    pushTicker(d.autoOrdersEnabled ? "b-queued" : "b-assigned", "live mode",
+      d.autoOrdersEnabled ? "Live Mode off — fake demo orders resumed." : "Live Mode ON — only real customer checkouts create orders now.");
+  }catch(e){}
+};
+(async () => {
+  try{
+    const res = await fetch(`${apiBase}/admin/live-mode/status`);
+    const d = await res.json();
+    setLiveModeButton(!d.autoOrdersEnabled);
+  }catch(e){}
+})();
 
 function tickClock(){ document.getElementById("clock").textContent = new Date().toTimeString().slice(0,8); }
 
